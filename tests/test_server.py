@@ -58,7 +58,7 @@ class TestContextGuardServer(unittest.TestCase):
             "jsonrpc": "2.0",
             "id": 5,
             "method": "tools/call",
-            "params": {"name": "get_context_status", "arguments": {}},
+            "params": {"name": "get_context_status", "arguments": {"window_limit": 1_000_000}},
         }
         res = self.server.handle_request(req)
         status_data = json.loads(res["result"]["content"][0]["text"])

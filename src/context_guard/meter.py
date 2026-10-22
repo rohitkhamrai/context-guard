@@ -53,6 +53,37 @@ class ContextMeter:
         except Exception:
             return 0
 
+    @staticmethod
+    def detect_antigravity_session() -> tuple[str, Path | None]:
+        """Auto-detect current Antigravity IDE conversation ID and transcript path."""
+        home = Path.home()
+        brain_dir = home / ".gemini" / "antigravity-ide" / "brain"
+        if not brain_dir.is_dir():
+            return "unknown", None
+
+        try:
+            conv_dirs = [d for d in brain_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
+            if not conv_dirs:
+                return "unknown", None
+            latest_dir = max(conv_dirs, key=lambda d: d.stat().st_mtime)
+            transcript_file = latest_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            return latest_dir.name, transcript_file if transcript_file.is_file() else None
+        except Exception:
+            return "unknown", None
+
+    def sync_with_antigravity(self) -> int:
+        """Measure real-time token footprint of active Antigravity conversation."""
+        _, transcript_path = self.detect_antigravity_session()
+        if transcript_path and transcript_path.is_file():
+            try:
+                size_bytes = transcript_path.stat().st_size
+                tokens = math.ceil(size_bytes / 3.8)
+                self.current_tokens = tokens
+                return tokens
+            except Exception:
+                pass
+        return self.current_tokens
+
     @property
     def usage_ratio(self) -> float:
         """Current usage ratio (0.0 to 1.0+)."""
@@ -93,23 +124,34 @@ class ContextMeter:
 
         return f"[{fill_char * filled}{empty_char * empty}]"
 
-    def render_badge(self, locked_invariants: int = 0) -> str:
+    def render_badge(self, locked_invariants: int = 0, unicode_mode: bool = True) -> str:
         """Render standard 1-line status badge for agent response footers."""
         used_k = f"{round(self.current_tokens / 1000, 1)}k" if self.current_tokens >= 1000 else str(self.current_tokens)
         limit_k = f"{round(self.window_limit / 1000, 0):.0f}k"
-        bar = self.render_gauge_bar(width=8)
+        bar = self.render_gauge_bar(width=8, unicode_mode=unicode_mode)
         pct = f"{self.usage_percentage}%"
 
         badge_level = self.level
-        if badge_level == SaturationLevel.SAFE:
-            icon = "⚡"
-            status = "SAFE"
-        elif badge_level == SaturationLevel.WARNING:
-            icon = "⚠️"
-            status = "HEAVY"
+        if unicode_mode:
+            if badge_level == SaturationLevel.SAFE:
+                icon = "⚡"
+                status = "SAFE"
+            elif badge_level == SaturationLevel.WARNING:
+                icon = "⚠️"
+                status = "HEAVY"
+            else:
+                icon = "🚨"
+                status = "CRITICAL"
         else:
-            icon = "🚨"
-            status = "CRITICAL"
+            if badge_level == SaturationLevel.SAFE:
+                icon = "[*]"
+                status = "SAFE"
+            elif badge_level == SaturationLevel.WARNING:
+                icon = "[!]"
+                status = "HEAVY"
+            else:
+                icon = "[ALERT]"
+                status = "CRITICAL"
 
         invariant_str = f" ── [Ledger: {locked_invariants} Invariants Locked]" if locked_invariants > 0 else ""
         return f"{icon} [Context: {used_k}/{limit_k} ({pct}) {bar}] {status}{invariant_str}"

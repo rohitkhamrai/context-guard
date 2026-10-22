@@ -165,10 +165,12 @@ class ContextGuardServer:
             if "add_tokens" in args:
                 self.meter.current_tokens += args["add_tokens"]
             else:
-                # Sync meter tokens with ledger tokens
-                stats = self.ledger.get_stats()
-                if stats["total_estimated_tokens"] > self.meter.current_tokens:
-                    self.meter.current_tokens = stats["total_estimated_tokens"]
+                # Auto-sync with live Antigravity IDE conversation
+                synced = self.meter.sync_with_antigravity()
+                if synced <= 0:
+                    stats = self.ledger.get_stats()
+                    if stats["total_estimated_tokens"] > self.meter.current_tokens:
+                        self.meter.current_tokens = stats["total_estimated_tokens"]
 
             invariants = len(self.ledger.get_invariants())
             report = self.meter.get_status_report(locked_invariants=invariants)
@@ -220,6 +222,7 @@ class ContextGuardServer:
             return json.dumps(output, indent=2)
 
         elif name == "render_badge":
+            self.meter.sync_with_antigravity()
             invariants = len(self.ledger.get_invariants())
             return self.meter.render_badge(locked_invariants=invariants)
 

@@ -109,6 +109,17 @@ class CheckpointPruner:
         md_content = self.render_checkpoint_markdown(checkpoint_data)
         self.checkpoint_md_path.write_text(md_content, encoding="utf-8")
 
+        # Sync directly into active Antigravity IDE brain vault if detected
+        conv_id, _ = ContextMeter.detect_antigravity_session()
+        if conv_id != "unknown":
+            antigravity_dir = Path.home() / ".gemini" / "antigravity-ide" / "brain" / conv_id
+            if antigravity_dir.is_dir():
+                try:
+                    (antigravity_dir / "checkpoint.json").write_text(json.dumps(checkpoint_data, indent=2), encoding="utf-8")
+                    (antigravity_dir / "active_checkpoint.md").write_text(md_content, encoding="utf-8")
+                except Exception:
+                    pass
+
         return checkpoint_data
 
     def generate_keep_vs_drop_diff(self) -> dict[str, Any]:
