@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "context-guard"
+version = "0.1.0"
+description = "Real-Time Context Saturation Meter & Cognitive State Checkpointing Engine for AI Coding Agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Rohit Kumar Khamrai", email = "rohitkhamrai@gmail.com" }
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "context-window",
+    "context-rot",
+    "agent-memory",
+    "compaction",
+    "claude-code",
+    "cursor",
+    "antigravity"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = []
+
+[project.scripts]
+context-guard = "context_guard.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
