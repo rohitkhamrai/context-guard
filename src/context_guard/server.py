@@ -160,17 +160,19 @@ class ContextGuardServer:
 
     def call_tool(self, name: str, args: dict[str, Any]) -> str:
         if name == "get_context_status":
-            if "window_limit" in args:
-                self.meter.window_limit = args["window_limit"]
+            custom_limit = args.get("window_limit")
             if "add_tokens" in args:
                 self.meter.current_tokens += args["add_tokens"]
             else:
                 # Auto-sync with live Antigravity IDE conversation
-                synced = self.meter.sync_with_antigravity()
+                synced = self.meter.sync_with_antigravity(default_limit=custom_limit)
                 if synced <= 0:
                     stats = self.ledger.get_stats()
                     if stats["total_estimated_tokens"] > self.meter.current_tokens:
                         self.meter.current_tokens = stats["total_estimated_tokens"]
+
+            if custom_limit:
+                self.meter.window_limit = custom_limit
 
             invariants = len(self.ledger.get_invariants())
             report = self.meter.get_status_report(locked_invariants=invariants)

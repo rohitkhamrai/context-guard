@@ -71,18 +71,32 @@ class ContextMeter:
         except Exception:
             return "unknown", None
 
-    def sync_with_antigravity(self) -> int:
-        """Measure real-time token footprint of active Antigravity conversation."""
+    def sync_with_antigravity(self, default_limit: int | None = None) -> int:
+        """Measure real-time active token footprint of Antigravity conversation (post-compaction)."""
         _, transcript_path = self.detect_antigravity_session()
-        if transcript_path and transcript_path.is_file():
-            try:
-                size_bytes = transcript_path.stat().st_size
-                tokens = math.ceil(size_bytes / 3.8)
-                self.current_tokens = tokens
-                return tokens
-            except Exception:
-                pass
-        return self.current_tokens
+        if not transcript_path or not transcript_path.is_file():
+            return self.current_tokens
+
+        try:
+            with open(transcript_path, "r", encoding="utf-8", errors="replace") as f:
+                lines = f.readlines()
+
+            latest_checkpoint_idx = 0
+            for idx, line in enumerate(lines):
+                if '"type":"CHECKPOINT"' in line or '"type": "CHECKPOINT"' in line:
+                    latest_checkpoint_idx = idx
+
+            active_lines = lines[latest_checkpoint_idx:]
+            active_chars = sum(len(l) for l in active_lines)
+            tokens = math.ceil(active_chars / 3.8)
+            self.current_tokens = tokens
+            if default_limit is not None:
+                self.window_limit = default_limit
+            elif self.window_limit == 128_000:
+                self.window_limit = 160_000
+            return tokens
+        except Exception:
+            return self.current_tokens
 
     @property
     def usage_ratio(self) -> float:
