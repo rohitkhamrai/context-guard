@@ -16,7 +16,7 @@ class SaturationLevel(str, Enum):
 class ContextMeter:
     """Calculates context window usage, capacity thresholds, and renders fuel badges."""
 
-    def __init__(self, window_limit: int = 128_000, warning_threshold: float = 0.70, critical_threshold: float = 0.85) -> None:
+    def __init__(self, window_limit: int = 160_000, warning_threshold: float = 0.80, critical_threshold: float = 0.90) -> None:
         self.window_limit = max(1_000, window_limit)
         self.warning_threshold = warning_threshold
         self.critical_threshold = critical_threshold
